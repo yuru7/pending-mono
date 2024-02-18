@@ -17,6 +17,7 @@ settings.read("build.ini", encoding="utf-8")
 FONT_NAME = settings.get("DEFAULT", "FONT_NAME").replace(" ", "")
 FONTFORGE_PREFIX = settings.get("DEFAULT", "FONTFORGE_PREFIX")
 FONTTOOLS_PREFIX = settings.get("DEFAULT", "FONTTOOLS_PREFIX")
+SOURCE_FONTS_DIR = settings.get("DEFAULT", "SOURCE_FONTS_DIR")
 BUILD_FONTS_DIR = settings.get("DEFAULT", "BUILD_FONTS_DIR")
 HALF_WIDTH_STR = settings.get("DEFAULT", "HALF_WIDTH_STR")
 HALF_WIDTH_12 = int(settings.get("DEFAULT", "HALF_WIDTH_12"))
@@ -123,6 +124,8 @@ def fix_font_tables(style, variant):
     fix_os2_table(xml, style, flag_hw=HALF_WIDTH_STR in variant)
     # post テーブルを編集
     fix_post_table(xml)
+    # cmap テーブルを編集
+    fix_cmap_table(xml, style, variant)
 
     # ttxファイルを上書き保存
     xml.write(
@@ -157,6 +160,8 @@ def dump_ttx(input_name_base, output_name_base) -> ET:
             "OS/2",
             "-t",
             "post",
+            "-t",
+            "cmap",
             "-f",
             "-o",
             f"{BUILD_FONTS_DIR}/{output_name_base}.ttx",
@@ -248,6 +253,24 @@ def fix_post_table(xml: ET):
     # タグ形式: <isFixedPitch value="0"/>
     is_fixed_pitch = 0
     xml.find("post/isFixedPitch").set("value", str(is_fixed_pitch))
+
+
+def fix_cmap_table(xml: ET, style: str, variant: str):
+    """異体字シーケンスを搭載するために cmap テーブルを編集する。
+    pyftmerge で結合すると異体字シーケンスを司るテーブル cmap_format_14 が
+    消えてしまうため、マージする前の編集済み日本語フォントから該当テーブル情報を取り出して適用する。"""
+    # タグ形式:
+    # <cmap_format_14 platformID="0" platEncID="5">
+    #   <map uv="0x4fae" uvs="0xfe00" name="uniFA30"/>
+    #   <map uv="0x50e7" uvs="0xfe00" name="uniFA31"/>
+    # </cmap_format_14>
+    source_xml = dump_ttx(
+        f"{FONTFORGE_PREFIX}{FONT_NAME}{variant}-{style}-jp.ttf",
+        f"{FONTFORGE_PREFIX}{FONT_NAME}{variant}-{style}-jp",
+    )
+    source_cmap_format_14 = source_xml.find("cmap/cmap_format_14")
+    target_cmap = xml.find("cmap")
+    target_cmap.append(source_cmap_format_14)
 
 
 if __name__ == "__main__":
