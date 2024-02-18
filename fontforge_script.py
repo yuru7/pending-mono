@@ -5,6 +5,7 @@ import math
 import os
 import shutil
 import sys
+import uuid
 
 import fontforge
 import psMat
@@ -107,9 +108,6 @@ def generate_font(jp_style, eng_style, merged_style, italic=False):
     # 合成するフォントを開く
     jp_font, eng_font = open_fonts(jp_style, eng_style)
 
-    # fonttools merge エラー対処
-    altuni_to_entity(jp_font)
-
     # 日本語文書に頻出する記号を英語フォントから削除する
     if options.get("jpdoc"):
         remove_jpdoc_symbols(eng_font)
@@ -178,6 +176,10 @@ def open_fonts(jp_style: str, eng_style: str):
     eng_font = fontforge.open(
         f"{SOURCE_FONTS_DIR}/{ENG_FONT.replace('{style}', eng_style)}"
     )
+
+    # fonttools merge エラー対処
+    jp_font = altuni_to_entity(jp_font)
+
     # フォント参照を解除する
     jp_font.unlinkReferences()
     eng_font.unlinkReferences()
@@ -215,8 +217,14 @@ def altuni_to_entity(jp_font):
                     jp_font.selection.select(copy_target_glyph.glyphname)
                     jp_font.paste()
                 before_altuni = ",".join(map(str, altuni))
-
-    return jp_font
+    # エンコーディングの整理のため、開き直す
+    font_path = f"{BUILD_FONTS_DIR}/{jp_font.fullname}_{uuid.uuid4()}.ttf"
+    jp_font.generate(font_path)
+    jp_font.close()
+    reopen_jp_font = fontforge.open(font_path)
+    # 一時ファイルを削除
+    os.remove(font_path)
+    return reopen_jp_font
 
 
 def adjust_some_glyph(jp_font):
