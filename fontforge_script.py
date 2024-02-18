@@ -29,6 +29,8 @@ NERD_FONTS_STR = settings.get("DEFAULT", "NERD_FONTS_STR")
 # SLASHED_ZERO_STR = settings.get("DEFAULT", "SLASHED_ZERO_STR")
 EM_ASCENT = int(settings.get("DEFAULT", "EM_ASCENT"))
 EM_DESCENT = int(settings.get("DEFAULT", "EM_DESCENT"))
+OS2_ASCENT = int(settings.get("DEFAULT", "OS2_ASCENT"))
+OS2_DESCENT = int(settings.get("DEFAULT", "OS2_DESCENT"))
 HALF_WIDTH_12 = int(settings.get("DEFAULT", "HALF_WIDTH_12"))
 FULL_WIDTH_35 = int(settings.get("DEFAULT", "FULL_WIDTH_35"))
 
@@ -234,8 +236,7 @@ def adjust_some_glyph(jp_font):
 
 def em_1000(font):
     """フォントのEMを1000に変換する"""
-    em_size = EM_ASCENT + EM_DESCENT
-    font.em = em_size
+    font.em = EM_ASCENT + EM_DESCENT
 
 
 def delete_duplicate_glyphs(jp_font, eng_font):
@@ -424,37 +425,41 @@ def add_nerd_font_glyphs(jp_font, eng_font):
             if nerd_glyph.glyphname in glyph_names:
                 nerd_glyph.glyphname = f"{nerd_glyph.glyphname}-{nerd_glyph.encoding}"
             glyph_names.add(nerd_glyph.glyphname)
-            # 幅を調整する
             half_width = eng_font[0x0030].width
+            # Powerline Symbols の調整
             if 0xE0B0 <= nerd_glyph.unicode <= 0xE0D4:
-                # Powerline Symbols の調整
-                if nerd_glyph.width < half_width:
-                    nerd_glyph.transform(
-                        psMat.translate((half_width - nerd_glyph.width) / 2, 0)
-                    )
-                    nerd_glyph.width = half_width
-                elif nerd_glyph.width > half_width:
-                    nerd_glyph.transform(psMat.scale(half_width / nerd_glyph.width, 1))
-                    nerd_glyph.width = half_width
-                # 個別調整
+                # なぜかズレている右付きグリフの個別調整 (EM 1000 に変更した後を想定して調整)
+                original_width = nerd_glyph.width
                 if nerd_glyph.unicode == 0xE0B2:
-                    nerd_glyph.transform(psMat.translate(-340, 0))
+                    nerd_glyph.transform(psMat.translate(-353, 0))
                 elif nerd_glyph.unicode == 0xE0B6:
-                    nerd_glyph.transform(psMat.translate(-417, 0))
+                    nerd_glyph.transform(psMat.translate(-414, 0))
                 elif nerd_glyph.unicode == 0xE0C5:
-                    nerd_glyph.transform(psMat.translate(-73, 0))
+                    nerd_glyph.transform(psMat.translate(-137, 0))
                 elif nerd_glyph.unicode == 0xE0C7:
-                    nerd_glyph.transform(psMat.translate(-139, 0))
+                    nerd_glyph.transform(psMat.translate(-214, 0))
                 elif nerd_glyph.unicode == 0xE0D4:
-                    nerd_glyph.transform(psMat.translate(-291, 0))
-                nerd_glyph.width = half_width
-            else:
-                if nerd_glyph.width < 600:
+                    nerd_glyph.transform(psMat.translate(-314, 0))
+                nerd_glyph.width = original_width
+                # 位置と幅合わせ
+                if nerd_glyph.width < half_width:
                     # 幅が狭いグリフは中央寄せとみなして調整する
                     nerd_glyph.transform(
                         psMat.translate((half_width - nerd_glyph.width) / 2, 0)
                     )
-                nerd_glyph.width = half_width
+                elif nerd_glyph.width > half_width:
+                    # 幅が広いグリフは縮小して調整する
+                    nerd_glyph.transform(psMat.scale(half_width / nerd_glyph.width, 1))
+                # グリフの高さ・位置を調整する
+                nerd_glyph.transform(psMat.scale(1, 1.21))
+                nerd_glyph.transform(psMat.translate(0, -24))
+            elif nerd_glyph.width < 600:
+                # 幅が狭いグリフは中央寄せとみなして調整する
+                nerd_glyph.transform(
+                    psMat.translate((half_width - nerd_glyph.width) / 2, 0)
+                )
+            # 幅を設定
+            nerd_glyph.width = half_width
     # 日本語フォントにマージするため、既に存在する場合は削除する
     for nerd_glyph in nerd_font.glyphs():
         if nerd_glyph.unicode != -1:
@@ -474,21 +479,21 @@ def edit_meta_data(font, weight: str, variant: str):
     """フォント内のメタデータを編集する"""
     font.ascent = EM_ASCENT
     font.descent = EM_DESCENT
-    font.os2_typoascent = EM_ASCENT
-    font.os2_typodescent = -EM_DESCENT
 
-    ascent_offset = 80
-    descent_offset = 160
-    if HALF_WIDTH_STR in variant:
-        ascent_offset = 60
-        descent_offset = 140
-
-    font.hhea_ascent = EM_ASCENT + ascent_offset
-    font.hhea_descent = -(EM_DESCENT + descent_offset)
-    font.os2_winascent = EM_ASCENT + ascent_offset
-    font.os2_windescent = EM_DESCENT + descent_offset
-    font.hhea_linegap = 0
+    if NERD_FONTS_STR in variant:
+        # Nerd Fonts の場合は typoascent, typodescent を EM ascent, EM descent よりも大きくする
+        font.os2_typoascent = OS2_ASCENT
+        font.os2_typodescent = -OS2_DESCENT
+    else:
+        font.os2_typoascent = EM_ASCENT
+        font.os2_typodescent = -EM_DESCENT
     font.os2_typolinegap = 0
+    font.os2_winascent = OS2_ASCENT
+    font.os2_windescent = OS2_DESCENT
+
+    font.hhea_ascent = OS2_ASCENT
+    font.hhea_descent = -OS2_DESCENT
+    font.hhea_linegap = 0
 
     font.sfnt_names = (
         (
