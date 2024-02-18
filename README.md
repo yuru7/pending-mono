@@ -18,6 +18,7 @@ Pending Mono は、欧文フォント [Commit Mono](https://commitmono.com/) と
 
 - 隣接する `m` などの位置を調節する Smart Kerning 搭載。字体のシンプルさに重点を置いた [Commit Mono](https://commitmono.com/) 由来の英数字
 - ユニバーサルデザインを掲げ、読みやすさを追求したモリサワ製 [BIZ UDゴシック](https://github.com/googlefonts/morisawa-biz-ud-gothic) 由来の日本語文字
+    - BIZ UDゴシックと同等の IVS (異体字シーケンス) にも対応
 - 文字幅比率が 半角3:全角5、ゆとりのある幅の半角英数字
     - 半角1:全角2 のバリエーションあり
 - バグの原因になりがちな全角スペースが可視化される
