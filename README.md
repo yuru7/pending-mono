@@ -2,6 +2,8 @@
 
 Pending Mono は、欧文フォント [Commit Mono](https://commitmono.com/) と日本語フォント [BIZ UDゴシック](https://github.com/googlefonts/morisawa-biz-ud-gothic) を合成したプログラミング向けフォントです。
 
+![image](https://github.com/yuru7/pending-mono/assets/13458509/ff434f2b-6f22-4cf6-893f-d1e2de7e154e)
+
 [✒ **ダウンロード**](https://github.com/yuru7/pending-mono/releases)  
 ※「Assets」内の zip ファイルをダウンロードしてご利用ください。
 
@@ -19,10 +21,6 @@ Pending Mono は、欧文フォント [Commit Mono](https://commitmono.com/) と
 - 文字幅比率が 半角3:全角5、ゆとりのある幅の半角英数字
     - 半角1:全角2 のバリエーションあり
 - バグの原因になりがちな全角スペースが可視化される
-
-## サンプル
-
-TODO
 
 ## ビルド
 
