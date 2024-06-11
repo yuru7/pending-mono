@@ -139,7 +139,7 @@ def generate_font(jp_style, eng_style, merged_style, italic=False):
 
     # 全角スペースを可視化する
     if not options.get("invisible-zenkaku-space"):
-        visualize_zenkaku_space(jp_font, eng_font)
+        visualize_zenkaku_space(jp_font)
 
     # Nerd Fontのグリフを追加する
     if options.get("nerd-font"):
@@ -410,11 +410,20 @@ def transform_half_width(jp_font, eng_font):
             glyph.width = after_width_eng * 2
 
 
-def visualize_zenkaku_space(jp_font, eng_font):
+def visualize_zenkaku_space(jp_font):
     """全角スペースを可視化する"""
-    # 全角スペースの差し替え
-    jp_font[0x3000].clear()
+    # 全角スペースを差し替え
+    glyph = jp_font[0x3000]
+    width_to = glyph.width
+    glyph.clear()
     jp_font.mergeFonts(fontforge.open(f"{SOURCE_FONTS_DIR}/{IDEOGRAPHIC_SPACE}"))
+    # 幅を設定し位置調整
+    jp_font.selection.select("U+3000")
+    for glyph in jp_font.selection.byGlyphs:
+        width_from = glyph.width
+        glyph.transform(psMat.translate((width_to - width_from) / 2, 0))
+        glyph.width = width_to
+    jp_font.selection.none()
 
 
 def add_nerd_font_glyphs(jp_font, eng_font):
